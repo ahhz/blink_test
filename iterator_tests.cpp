@@ -399,8 +399,8 @@ bool test_range_algebra_operators()
   uncopyable_range b(std::vector<int>{ 1, 2, 3, 4 });
   auto ra = blink::iterator::range_algebra(std::move(a)); // move
   auto rb = blink::iterator::range_algebra(std::move(b)); // move
-  ra = ra + 5 * rb - ra * 3 / rb + ra % 7;
-  return *(++ra.begin()) == 20 + 5 * 2 - 20 * 3 / 2 + 20 % 7;
+  ra = -ra + 5 * rb - ra * 3 / rb + ra % 7;
+  return *(++ra.begin()) == -20 + 5 * 2 - 20 * 3 / 2 + 20 % 7;
 }
 
 bool test_range_algebra_transform_all_ranges()

@@ -3,6 +3,7 @@
 #include <blink/raster/utility.h>
 #include <blink/raster/gdal_raster_view.h>
 #include <blink/raster/edge_view.h>
+#include <blink/raster/gdal_input_iterator.h>
 #include <boost/filesystem.hpp>
 
 bool test_create_temp_gdal_raster()
@@ -358,35 +359,34 @@ bool test_gdal_raster_large()
 
 bool test_input_view_raster_large()
 {
-  int rows = 5000;
-  int cols = 3000;
+  int rows = 50;
+  int cols = 30;
   {
-    GDALDataset* dataset = blink::raster::detail::create_standard_gdaldataset
-      ("temp.tif", rows, cols, GDT_Int32);
+    auto band = blink::raster::detail::gdal_makers::create_band("temp.tif", rows, cols, 
+      GDT_Int32);
+    blink::raster::gdalrasterband_input_view<int> view(band.get());
   
-    blink::raster::gdalrasterband_input_view<int> view(
-      dataset->GetRasterBand(1) );
     int count = 0;
     for (auto&& i : view)
     {
       i = count++;
     }
-    GDALClose(dataset);
   }
   bool check_exist = boost::filesystem::exists("temp.tif");
 
   bool check_contents;
   {
-    GDALDataset* dataset = (GDALDataset *)GDALOpen("temp.tif", GA_ReadOnly);
-    blink::raster::gdalrasterband_input_view<const int> view(
-      dataset->GetRasterBand(1));
-    
+    auto band = blink::raster::detail::gdal_makers::open_band("temp.tif",
+      //GA_Update,
+      GA_ReadOnly,
+      1);
+    blink::raster::gdalrasterband_input_view<int> view(band.get());
+
     std::vector<int> check_vector;
     for (auto&& i : view)
     {
       check_vector.push_back(i);
     }
-    GDALClose(dataset);
     int last = check_vector.back();
     check_vector.resize(15);
     check_contents = check_vector == std::vector<int>
@@ -411,5 +411,5 @@ TEST(Raster, GDALRaster) {
   EXPECT_TRUE(test_gdal_raster_transpose_h_edge_view());
   EXPECT_TRUE(test_input_view_raster());
   EXPECT_TRUE(test_input_view_raster_large());
-  EXPECT_TRUE(true || test_gdal_raster_large()); // effectively skipped
+ // EXPECT_TRUE(test_gdal_raster_large()); 
 }

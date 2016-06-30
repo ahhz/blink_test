@@ -485,6 +485,21 @@ bool test_range_range_uncopyable()
 bool test_any_proxy()
 {
   int v = 3;
+  blink::iterator::any_proxy_reference<int> a(v);
+  a = 5;
+  a += 3;
+  a -= 7;
+  a *= 16;
+  a /= 4;
+  a++;
+  a--;
+  int w = a--;
+  return w == 4 && v == 3;
+}
+
+bool test_any_proxy_ref()
+{
+  int v = 3;
   blink::iterator::any_proxy_reference<int> a(std::ref(v));
   a = 5;
   a += 3;
@@ -497,7 +512,16 @@ bool test_any_proxy()
   return w == 4 && v == 3;
 }
 
-bool test_any_iterator()
+bool test_any_iterator_single()
+{
+
+  std::vector<int> v = { 1, 2, 3, 4, 5 };
+  blink::iterator::any_input_iterator<int> i(v.begin()+1);
+  auto value = *i;
+  return value == 2;
+}
+
+bool test_any_iterator_range()
 {
 
   std::vector<int> v = { 1, 2, 3, 4, 5 };
@@ -543,7 +567,8 @@ bool test_any_range_algebra()
   blink::iterator::any_input_range<int> aa(a);
   blink::iterator::any_input_range<int> bb(b);
   std::vector<int> c;
-  auto cc = blink::iterator::range_algebra(aa) + blink::iterator::range_algebra(bb);
+  auto cc = blink::iterator::range_algebra_ref(aa) 
+    + blink::iterator::range_algebra_ref(bb);
   for (auto&& i : cc)
   {
     c.push_back(i);
@@ -596,7 +621,9 @@ TEST(Iterator, RangeRange) {
 
 TEST(Iterator, AnyRange) {
   EXPECT_TRUE(test_any_proxy());
-  EXPECT_TRUE(test_any_iterator());
+  EXPECT_TRUE(test_any_proxy_ref());
+  EXPECT_TRUE(test_any_iterator_single());
+  EXPECT_TRUE(test_any_iterator_range());
   EXPECT_TRUE(test_any_iterator_postfix());
   EXPECT_TRUE(test_any_range());
   EXPECT_TRUE(test_any_range_algebra());

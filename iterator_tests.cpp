@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
-
+#include <blink/iterator/any_proxy_reference.h>
+#include <blink/iterator/any_input_iterator.h>
+#include <blink/iterator/any_input_range.h>
+#include <blink/iterator/any_range_algebra_operators.h>
+#include <blink/iterator/range_algebra_operators.h>
 #include <blink/iterator/zip_iterator.h>
 #include <blink/iterator/zip_range.h>
 #include <blink/iterator/transform_range.h>
@@ -476,8 +480,77 @@ bool test_range_range_uncopyable()
     product *= sum;
   }
   return product == (1 + 2 + 3) * (2 + 4 + 9) * (3 + 8 + 27) * (4 + 16 + 81);
-
 }
+
+bool test_any_proxy()
+{
+  int v = 3;
+  blink::iterator::any_proxy_reference<int> a(std::ref(v));
+  a = 5;
+  a += 3;
+  a -= 7;
+  a *= 16;
+  a /= 4;
+  a++;
+  a--;
+  int w = a--;
+  return w == 4 && v == 3;
+}
+
+bool test_any_iterator()
+{
+
+  std::vector<int> v = { 1, 2, 3, 4, 5 };
+  blink::iterator::any_input_iterator<int> i(v.begin());
+  blink::iterator::any_input_iterator<int> e(v.end());
+  int sum = 0;
+  for (; i != e; ++i)
+  {
+    sum += *i;
+  }
+  return sum == 15;
+}
+
+bool test_any_iterator_postfix()
+{
+
+  std::vector<int> v = { 1, 2, 3, 4, 5 };
+  blink::iterator::any_input_iterator<int> i(v.begin());
+  blink::iterator::any_input_iterator<int> e(v.end());
+  ++i;
+  int a = *(i++);
+  int b = *i;
+  return a == 2 && b == 3;
+}
+
+bool test_any_range()
+{
+
+  std::vector<int> v = { 1, 2, 3, 4, 5 };
+  blink::iterator::any_input_range<int> r(v);
+  int sum = 0;
+  for (auto&& i : r)
+  {
+    sum += i;
+  }
+  return sum == 15;
+}
+
+bool test_any_range_algebra()
+{
+  std::vector<int> a = { 1, 2, 3, 4, 5 };
+  std::vector<int> b = { 10, 20, 30, 40, 50 };
+  blink::iterator::any_input_range<int> aa(a);
+  blink::iterator::any_input_range<int> bb(b);
+  std::vector<int> c;
+  auto cc = blink::iterator::range_algebra(aa) + blink::iterator::range_algebra(bb);
+  for (auto&& i : cc)
+  {
+    c.push_back(i);
+  }
+  return c == std::vector < int > {11, 22, 33, 44, 55};
+}
+
 
 // Tests factorial of 0.
 TEST(Iterator, ZipRange) {
@@ -520,5 +593,14 @@ TEST(Iterator, RangeRange) {
   EXPECT_TRUE(test_range_range());
   EXPECT_TRUE(test_range_range_uncopyable());
 }
+
+TEST(Iterator, AnyRange) {
+  EXPECT_TRUE(test_any_proxy());
+  EXPECT_TRUE(test_any_iterator());
+  EXPECT_TRUE(test_any_iterator_postfix());
+  EXPECT_TRUE(test_any_range());
+  EXPECT_TRUE(test_any_range_algebra());
+}
+
 
 

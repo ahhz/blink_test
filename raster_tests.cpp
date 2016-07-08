@@ -397,7 +397,7 @@ bool test_input_view_raster_large()
   return check_exist && check_not_exist && check_contents;
 }
 
-#if NDEBUG // Ouch, have not build gdal libraries in debug and now get funny errors
+//#if NDEBUG // Ouch, have not build gdal libraries in debug and now get funny errors
 TEST(Raster, GDALRaster) {
   EXPECT_TRUE(test_create_temp_gdal_raster());
   EXPECT_TRUE(test_create_gdal_raster());
@@ -413,4 +413,4 @@ TEST(Raster, GDALRaster) {
  // EXPECT_TRUE(test_gdal_raster_large()); 
  
  }
-#endif
+//#endif

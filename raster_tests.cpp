@@ -4,6 +4,7 @@
 #include <blink/raster/gdal_raster_view.h>
 #include <blink/raster/edge_view.h>
 #include <blink/raster/gdal_input_iterator.h>
+#include <blink/raster/padded_raster_view.h>
 #include <boost/filesystem.hpp>
 
 bool test_create_temp_gdal_raster()
@@ -306,7 +307,7 @@ bool test_input_view_raster()
   bool check_contents;
   {
     auto band = blink::raster::detail::gdal_makers::open_band("temp.tif", GA_ReadOnly);
-    blink::raster::gdalrasterband_input_view<const int> view(band);
+    blink::raster::gdalrasterband_range_view<const int> view(band);
     std::vector<int> check_vector;
    
     for (auto&& i : view)
@@ -362,7 +363,7 @@ bool test_input_view_raster_large()
   {
     auto band = blink::raster::detail::gdal_makers::create_band("temp.tif", rows, cols, 
       GDT_Int32);
-    blink::raster::gdalrasterband_input_view<int> view(band);
+    blink::raster::gdalrasterband_range_view<int> view(band);
   
     int count = 0;
     for (auto&& i : view)
@@ -378,7 +379,7 @@ bool test_input_view_raster_large()
       //GA_Update,
       GA_ReadOnly,
       1);
-    blink::raster::gdalrasterband_input_view<const int> view(band);
+    blink::raster::gdalrasterband_range_view<const int> view(band);
     
     std::vector<int> check_vector;
     for (auto&& i : view)
@@ -391,6 +392,46 @@ bool test_input_view_raster_large()
     check_contents = check_vector == std::vector<int>
     {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}
     && last == (rows*cols  - 1);
+  }
+  boost::filesystem::remove("temp.tif");
+  bool check_not_exist = !boost::filesystem::exists("temp.tif");
+  return check_exist && check_not_exist && check_contents;
+}
+bool test_padded_raster()
+{
+  {
+    auto r = blink::raster::create_gdal_raster<int>("temp.tif", 2, 3);
+    int count = 1; // start at 1
+    for (auto&& i : r)
+    {
+      i = count++;
+    }
+  } // leave scope
+  bool check_exist = boost::filesystem::exists("temp.tif");
+  bool check_contents;
+  {
+    auto band = blink::raster::detail::gdal_makers::open_band("temp.tif", GA_ReadOnly);
+    blink::raster::gdalrasterband_range_view<const int> view(band);
+    auto padded = pad_raster(view, 1, 3, 2, 4);
+    std::vector<int> check_vector;
+
+    for (boost::optional<const int>&& i : padded)
+    {
+      if (i) {
+        check_vector.push_back(i.get());
+      }
+      else {
+        check_vector.push_back(0);
+      }
+    }
+    check_contents = check_vector == std::vector < int >
+    {0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 1, 2, 3, 0, 0, 0, 0,
+      0, 0, 4, 5, 6, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0};
+
   }
   boost::filesystem::remove("temp.tif");
   bool check_not_exist = !boost::filesystem::exists("temp.tif");
@@ -410,7 +451,8 @@ TEST(Raster, GDALRaster) {
   EXPECT_TRUE(test_gdal_raster_transpose_h_edge_view());
   EXPECT_TRUE(test_input_view_raster());
   EXPECT_TRUE(test_input_view_raster_large());
- // EXPECT_TRUE(test_gdal_raster_large()); 
+  EXPECT_TRUE(test_padded_raster());
+  // EXPECT_TRUE(test_gdal_raster_large()); 
  
  }
 //#endif

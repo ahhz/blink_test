@@ -4,7 +4,7 @@
 #include <blink/raster/gdal_raster_view.h>
 #include <blink/raster/edge_view.h>
 #include <blink/raster/gdal_input_iterator.h>
-#include <blink/raster/padded_raster_view.h>
+#include <blink/raster/pad_raster.h>
 #include <blink/raster/offset_raster.h>
 #include <boost/filesystem.hpp>
 

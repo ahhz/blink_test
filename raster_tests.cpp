@@ -5,6 +5,7 @@
 #include <blink/raster/edge_view.h>
 #include <blink/raster/gdal_input_iterator.h>
 #include <blink/raster/padded_raster_view.h>
+#include <blink/raster/offset_raster.h>
 #include <boost/filesystem.hpp>
 
 bool test_create_temp_gdal_raster()
@@ -438,6 +439,167 @@ bool test_padded_raster()
   return check_exist && check_not_exist && check_contents;
 }
 
+bool test_padded_raster_2()
+{
+  {
+    auto r = blink::raster::create_gdal_raster<int>("temp.tif", 2, 3);
+    int count = 1; // start at 1
+    for (auto&& i : r)
+    {
+      i = count++;
+    }
+  } // leave scope
+  bool check_exist = boost::filesystem::exists("temp.tif");
+  bool check_contents;
+  {
+    auto band = blink::raster::detail::gdal_makers::open_band("temp.tif", GA_ReadOnly);
+    blink::raster::gdalrasterband_range_view<const int> view(band);
+    auto padded = pad_raster(view, 1, 0, 2, 0);
+    std::vector<int> check_vector;
+
+    for (boost::optional<const int>&& i : padded)
+    {
+      if (i) {
+        check_vector.push_back(i.get());
+      }
+      else {
+        check_vector.push_back(0);
+      }
+    }
+    check_contents = check_vector == std::vector < int >
+    {0, 0, 0, 0, 0,
+      0, 0, 1, 2, 3,
+      0, 0, 4, 5, 6};
+
+  }
+  boost::filesystem::remove("temp.tif");
+  bool check_not_exist = !boost::filesystem::exists("temp.tif");
+  return check_exist && check_not_exist && check_contents;
+}
+
+bool test_padded_raster_3()
+{
+  {
+    auto r = blink::raster::create_gdal_raster<int>("temp.tif", 2, 3);
+    int count = 1; // start at 1
+    for (auto&& i : r)
+    {
+      i = count++;
+    }
+  } // leave scope
+  bool check_exist = boost::filesystem::exists("temp.tif");
+  bool check_contents;
+  {
+    auto band = blink::raster::detail::gdal_makers::open_band("temp.tif", GA_ReadOnly);
+    blink::raster::gdalrasterband_range_view<const int> view(band);
+    auto padded = pad_raster(view, 0, 1, 0, 2);
+    std::vector<int> check_vector;
+
+    for (boost::optional<const int>&& i : padded)
+    {
+      if (i) {
+        check_vector.push_back(i.get());
+      }
+      else {
+        check_vector.push_back(0);
+      }
+    }
+    check_contents = check_vector == std::vector < int >
+    {1, 2, 3, 0, 0,
+     4, 5, 6, 0, 0,
+     0, 0, 0, 0, 0
+    };
+
+  }
+  boost::filesystem::remove("temp.tif");
+  bool check_not_exist = !boost::filesystem::exists("temp.tif");
+  return check_exist && check_not_exist && check_contents;
+}
+
+
+bool test_offset_raster()
+{
+  {
+    auto r = blink::raster::create_gdal_raster<int>("temp.tif", 3, 4);
+    int count = 1; // start at 1
+    for (auto&& i : r)
+    {
+      i = count++;
+    }
+  } // leave scope
+  bool check_exist = boost::filesystem::exists("temp.tif");
+  bool check_contents;
+  {
+    auto band = blink::raster::detail::gdal_makers::open_band("temp.tif", GA_ReadOnly);
+    blink::raster::gdalrasterband_range_view<const int> view(band);
+    auto offset = offset_raster(view, 1, 2);
+    std::vector<int> check_vector;
+
+    for (boost::optional<const int>&& i : offset)
+    {
+      if (i) {
+        check_vector.push_back(i.get());
+      //  std::cout << i.get() << " ";
+      }
+      else {
+        check_vector.push_back(0);
+     //   std::cout << 0 << " ";
+      }
+    }
+    check_contents = check_vector == std::vector < int >
+    { 7, 8, 0, 0,
+      11, 12, 0, 0,
+      0, 0, 0, 0};
+    
+
+  }
+  boost::filesystem::remove("temp.tif");
+  bool check_not_exist = !boost::filesystem::exists("temp.tif");
+  return check_exist && check_not_exist && check_contents;
+}
+
+bool test_offset_raster_2()
+{
+  {
+    auto r = blink::raster::create_gdal_raster<int>("temp.tif", 3, 4);
+    int count = 1; // start at 1
+    for (auto&& i : r)
+    {
+      i = count++;
+    }
+  } // leave scope
+  bool check_exist = boost::filesystem::exists("temp.tif");
+  bool check_contents;
+  {
+    auto band = blink::raster::detail::gdal_makers::open_band("temp.tif", GA_ReadOnly);
+    blink::raster::gdalrasterband_range_view<const int> view(band);
+    auto offset = offset_raster(view, -1, -2);
+    std::vector<int> check_vector;
+
+    for (boost::optional<const int>&& i : offset)
+    {
+      if (i) {
+        check_vector.push_back(i.get());
+     //   std::cout << i.get() << " ";
+      }
+      else {
+        check_vector.push_back(0);
+    //    std::cout << 0 << " ";
+      }
+    }
+    check_contents = check_vector == std::vector < int >
+    { 0, 0, 0, 0,
+      0, 0, 1, 2,
+      0, 0, 5, 6};
+
+
+  }
+  boost::filesystem::remove("temp.tif");
+  bool check_not_exist = !boost::filesystem::exists("temp.tif");
+  return check_exist && check_not_exist && check_contents;
+}
+
+
 //#if NDEBUG // Ouch, have not build gdal libraries in debug and now get funny errors
 TEST(Raster, GDALRaster) {
   EXPECT_TRUE(test_create_temp_gdal_raster());
@@ -452,6 +614,10 @@ TEST(Raster, GDALRaster) {
   EXPECT_TRUE(test_input_view_raster());
   EXPECT_TRUE(test_input_view_raster_large());
   EXPECT_TRUE(test_padded_raster());
+  EXPECT_TRUE(test_padded_raster_2());
+  EXPECT_TRUE(test_padded_raster_3());
+  EXPECT_TRUE(test_offset_raster());
+  EXPECT_TRUE(test_offset_raster_2());
   // EXPECT_TRUE(test_gdal_raster_large()); 
  
  }
